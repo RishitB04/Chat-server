@@ -1,9 +1,5 @@
 # Chat Server with Groups and Private Messages 
 
-## Contributors
-- Rishit Bhutra&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;210857
-- Vedant Kale&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;211153
-- Rishav Mondal &nbsp;&nbsp;&nbsp;210848
 
 ## Description
 The Chat Server is a real-time communication application that allows users to connect and interact with each other through various features like instant messaging and group chats. This server-side application provides the infrastructure to facilitate seamless chatting experiences for its users.
