@@ -24,7 +24,7 @@
 
 using namespace std;
 
-mutex send_mtx, clients_mtx, groups_mtx;
+mutex clients_mtx, groups_mtx;
 
 unordered_map<int, string> clients;               // client socket -> username
 unordered_map<string, int> rclients;              // username -> client socket
@@ -34,9 +34,8 @@ unordered_map<string, unordered_set<int>> groups; // group -> client sockets
 // Send message to a specific client socket
 void sendmess(const int &client_socket, const string &msg)
 {
-    lock_guard<mutex> send_lock(send_mtx); // Ensuring thread safety while sending messages
     if (send(client_socket, msg.c_str(), msg.size(), 0) == -1)
-        cerr << "Error : Message Not Sent" << endl;
+        perror("Error : Message Not Sent");
 }
 
 // Receive message from a client
@@ -47,7 +46,7 @@ bool recvmess(const int &client_socket, string &msg)
     int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
     if (bytes_received <= 0)
     {
-        cerr << "Client disconnected." << endl;
+        perror("Error : Client disconnected.");
         return false;
     }
     msg = string(buffer, bytes_received); // Store received message
@@ -60,7 +59,7 @@ bool add(const int &client_socket, const string &username)
     lock_guard<mutex> lock(clients_mtx); // Ensuring thread safety for adding clients
     if (rclients.find(username) != rclients.end())
     {
-        string msg = "\033[31mAlready Logged In.\033[0m";
+        string msg = "\033[31mError : Already Logged In.\033[0m";
         sendmess(client_socket, msg);
 #ifdef _WIN32
         closesocket(client_socket);
@@ -69,15 +68,15 @@ bool add(const int &client_socket, const string &username)
 #endif
         return false;
     }
-    else
-        clients[client_socket] = username, rclients[username] = client_socket;
+    clients[client_socket] = username;
+    rclients[username] = client_socket;
     return true;
 }
 
 // Send command list to client for invalid commands
 void commands(const int &client_socket)
 {
-    string s = "\33[31mInvalid Command.\33[33m Commands usage:-\n/msg <username> <message>\n/broadcast <message>\n/group_msg <group_name> <message>\n/create_group <group_name>\n/leave_group <group_name>\n/join_group <group_name>\n/exit\033[0m";
+    string s = "\33[31mError : Invalid Command.\33[33m Commands usage:-\n/msg <username> <message>\n/broadcast <message>\n/group_msg <group_name> <message>\n/create_group <group_name>\n/leave_group <group_name>\n/join_group <group_name>\n/exit\033[0m";
     sendmess(client_socket, s);
 }
 
@@ -112,20 +111,20 @@ void message(const int &client_socket, const vector<string> &arg)
     string s;
     if (arg.size() < 3)
     {
-        s = "\033[31mInvalid Command.\033[33m Command usage:-\n/msg <username> <message>\033[0m";
+        s = "\033[31mError : Invalid Command.\033[33m Command usage:-\n/msg <username> <message>\033[0m";
         sendmess(client_socket, s);
         return;
     }
     lock_guard<mutex> lock(clients_mtx);
     if (users.find(arg[1]) == users.end())
     {
-        s = "\033[33m" + arg[1] + " doesn't exist.\033[0m";
+        s = "\033[33mError : " + arg[1] + " doesn't exist.\033[0m";
         sendmess(client_socket, s);
         return;
     }
     if (rclients.find(arg[1]) == rclients.end())
     {
-        s = "\033[33m" + arg[1] + " is not online.\033[0m";
+        s = "\033[33mError : " + arg[1] + " is not online.\033[0m";
         sendmess(client_socket, s);
         return;
     }
@@ -144,17 +143,17 @@ void broadcast(const int &client_socket, const vector<string> &arg)
     string s;
     if (arg.size() < 2)
     {
-        s = "\033[31mInvalid Command.\033[33m Command usage:-\n/broadcast <message>\033[0m";
+        s = "\033[31mError : Invalid Command.\033[33m Command usage:-\n/broadcast <message>\033[0m";
         sendmess(client_socket, s);
         return;
     }
     s = "[" + clients[client_socket] + "] :";
     for (int i = 1; i < arg.size(); i++)
     {
-        s += " " + arg[i];
+        s = s + " " + arg[i];
     }
     lock_guard<mutex> lock(clients_mtx); // Lock clients map for thread safety
-    for (auto &[id, s] : clients)        // Send broadcast message to all clients except the sender
+    for (auto &[id, s2] : clients)       // Send broadcast message to all clients except the sender
     {
         if (id != client_socket)
         {
@@ -169,7 +168,7 @@ void group_msg(const int &client_socket, const vector<string> &arg)
     string s;
     if (arg.size() < 3)
     {
-        s = "\033[31mInvalid Command.\033[33m Command should be of the following format:-\n/group_msg <group_name> <message>\033[0m";
+        s = "\033[31mError : Invalid Command.\033[33m Command should be of the following format:-\n/group_msg <group_name> <message>\033[0m";
         sendmess(client_socket, s);
         return;
     }
@@ -201,7 +200,7 @@ void create_grp(const int &client_socket, const vector<string> &arg)
     string s;
     if (arg.size() != 2)
     {
-        s = "\033[31mInvalid Command.\033[33m Command usage:-\n/create_group <group_name>\033[0m";
+        s = "\033[31mError : Invalid Command.\033[33m Command usage:-\n/create_group <group_name>\033[0m";
         sendmess(client_socket, s);
         return;
     }
@@ -213,7 +212,7 @@ void create_grp(const int &client_socket, const vector<string> &arg)
         sendmess(client_socket, s);
         return;
     }
-    s = "\033[33mGroup " + arg[1] + " already exists.\033[0m";
+    s = "\033[33mError : Group " + arg[1] + " already exists.\033[0m";
     sendmess(client_socket, s);
 }
 
@@ -223,20 +222,20 @@ void join_grp(const int &client_socket, const vector<string> &arg)
     string s;
     if (arg.size() != 2)
     {
-        s = "\033[31mInvalid Command.\033[33m Command usage:-\n/join_group <group_name>\033[0m";
+        s = "\033[31mError : Invalid Command.\033[33m Command usage:-\n/join_group <group_name>\033[0m";
         sendmess(client_socket, s);
         return;
     }
     lock_guard<mutex> groups_lock(groups_mtx); // Lock groups map for thread safety
     if (groups.find(arg[1]) == groups.end())
     {
-        s = "\033[33mNo group named " + arg[1] + " exists.\033[0m";
+        s = "\033[33mError : No group named " + arg[1] + " exists.\033[0m";
         sendmess(client_socket, s);
         return;
     }
     if (groups[arg[1]].find(client_socket) != groups[arg[1]].end())
     {
-        s = "\033[33mYou are already part of the group " + arg[1] + ".\033[0m";
+        s = "\033[33mError : You are already part of the group " + arg[1] + ".\033[0m";
         sendmess(client_socket, s);
         return;
     }
@@ -251,14 +250,14 @@ void leave_grp(const int &client_socket, const vector<string> &arg)
     string s;
     if (arg.size() != 2)
     {
-        s = "\033[31mInvalid Command.\033[33m Command usage:-\n/leave_group <group_name>\033[0m";
+        s = "\033[31mError : Invalid Command.\033[33m Command usage:-\n/leave_group <group_name>\033[0m";
         sendmess(client_socket, s);
         return;
     }
     lock_guard<mutex> groups_lock(groups_mtx); // Lock groups map for thread safety
     if (groups.find(arg[1]) == groups.end())
     {
-        s = "\033[33mNo group named " + arg[1] + " exists.\033[0m";
+        s = "\033[33mError : No group named " + arg[1] + " exists.\033[0m";
         sendmess(client_socket, s);
         return;
     }
@@ -371,7 +370,7 @@ int main()
     fin.open("users.txt");
     if (!fin.is_open())
     {
-        cerr << "Error: Unable to open users.txt file." << endl;
+        perror("Error: Unable to open users.txt file.");
         return -1;
     }
     while (getline(fin, line))

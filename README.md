@@ -1,14 +1,18 @@
 # Chat Server with Groups and Private Messages 
 
+## Contributors
+- Rishit Bhutra&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;210857
+- Vedant Kale&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;211153
+- Rishav Mondal &nbsp;&nbsp;&nbsp;210848
+
 ## Description
-The Chat Server is a real-time communication application that allows users to connect and interact with each other through various features like instant messaging, group chats, and file sharing. This server-side application provides the infrastructure to facilitate seamless chatting experiences for its users.
+The Chat Server is a real-time communication application that allows users to connect and interact with each other through various features like instant messaging and group chats. This server-side application provides the infrastructure to facilitate seamless chatting experiences for its users.
 
 ## Features
 
 - **User Authentication**: The server allows users to authenticate using a username and password.
 - **Direct Messaging**: Send private messages to other users.
 - **Broadcast Messaging**: Send a message to all connected users.
-- **Group Messaging**: Create, join, and send messages to groups of users.
 - **Group Management**: Users can create, join, or leave groups.
 
 
@@ -67,6 +71,41 @@ The Chat Server supports the following client interactions and commands:
 - `interact_client()`: Handles the main interaction loop for a client, processing commands.
 - `authorization()`: Handles the client authentication process.
 
+## Testing
+
+### 1. Simultaneous Login with Immediate Disconnection  
+- **Objective**: Simulate 400 clients logging in and then immediately closing their connections.  
+- **Execution**:  
+  - All 400 clients connected to the server.  
+  - After successful login, each client closed its socket instantly.  
+- **Result**:  
+  - The server handled all connections rapidly without noticeable delays.  
+  - Execution time was minimal.  
+  - No errors or crashes were observed.  
+
+### 2. Simultaneous Login with Persistent Connections  
+- **Objective**: Test how the server performs when clients remain connected indefinitely.  
+- **Execution**:  
+  - 400 clients logged in successfully.  
+  - Instead of closing their sockets, they entered an endless loop to keep the connections alive.  
+- **Result**:  
+  - Execution time increased significantly.  
+  - Server resources were continuously consumed.  
+  - No immediate failures, but this scenario could lead to potential resource exhaustion over time.  
+
+### 3. Multiple Clients Using the Same Credentials  
+- **Objective**: Check how the authentication system handles multiple clients attempting to log in with the same username and password.  
+- **Execution**:  
+  - 400 clients attempted to log in using **identical credentials**.  
+  - Expected behavior: Clients should receive an "Authentication Failed" message if the username is already logged in.  
+- **Result**:  
+  - Instead of authentication failures, the server returned **unexpected errors**.  
+  - Reviewing the code suggested that multiple logins for the same account **should not** be allowed, yet the error indicated a flaw in the authentication mechanism.  
+
+### Observations and Potential Issues  
+- The server efficiently handles a large number of clients logging in and disconnecting rapidly.  
+- When connections remain open indefinitely, execution time increases significantly, suggesting potential resource management concerns.  
+- The authentication system does not behave as expected when multiple clients attempt to log in with the same credentials. Further debugging is required to pinpoint the issue. 
 
 ## Configuration
 The chat server can be configured with the following parameters:
